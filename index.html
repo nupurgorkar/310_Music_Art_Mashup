@@ -5,6 +5,17 @@
     <title>Art to Music Generator</title>
 </head>
 <body>
+    ##image url embedded painting image
+    ##title of painting under
+    ##smaller text 'by artist'
+    ##button to generate playlist
+
+    ##<h2>Your Spotify Playlist</h2>
+    {% if playlist_url %}
+        <p>Listen to your playlist: <a href="{{ playlist_url }}" target="_blank">Open Playlist</a></p>
+    {% else %}
+        <p>Failed to create playlist.</p>
+{% endif %}
 
 </body>
 </html>
