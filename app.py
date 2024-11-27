@@ -41,6 +41,8 @@ def callback():
     ##render html template
 
 def random_painting():
+    harvard_url = f"https://api.harvardartmuseums.org/object?apikey={HARVARD_KEY}&classification=Paintings&hasimage=1&size=1&random=1"
+
     pass
 ##harvard api url with key
 ##get request with a response
