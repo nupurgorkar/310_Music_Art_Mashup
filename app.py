@@ -38,30 +38,36 @@ def callback():
 
     ##create playlist in user's account with the tracks
 
-## def random_painting
+    ##render html template
 
+def random_painting():
+    pass
 ##harvard api url with key
 ##get request with a response
 ##create a data variable with json
 ##get and return title of painting, image url, artists, and colors
+##create a variable called colors to return
 
 
-## def colors_to_genre
+def colors_to_genre(colors):
+    pass
 
 ##find dominant color in painting, perhaps using color picker library or just get colors in the harvard museum API
 ## genre map
 ## red: rock, blue: pop, yellow: rap, white: classical, black: punk
 ##return the assocated genre
 
-## def find_spotify_tracks
-
+##genre is returned in last function
+def find_spotify_tracks(access_token, genre):
+    pass
 ##spotify header with access token
 ##get user's top 50 tracks
 ##filter tracks by genre
-## return 5 tracks
+## return 5 tracks to put in playlist
 
 
-## def create_playlist
+def create_playlist(access_token, title, tracks):
+    pass
 ##painting name as playlist, tracks created earlier as param, and access token
 
 ##get user's spotify id
