@@ -1,9 +1,9 @@
 import json
 
 
-from flask import Flask, request, redirect, g, render_template
+from flask import Flask, request, redirect, render_template
 import requests
-from urllib.parse import quote
+#from urllib.parse import quote
 from keys import HARVARD_KEY, Spotify_client_secret, Spotify_client_id
 
 ##creating instance of app object
@@ -22,7 +22,100 @@ def index():
 
 @app.route('/callback')
 def callback():
-    # spotify provides auth token
+    ##create playlist in user's account with the tracks
+
+    genre_map = find_genres()
+    painting = random_painting()
+    #print(painting.)
+
+    #print(colors_to_genre(artist_genre_map,random_painting()))
+    #print(playlist(colors_to_genre(genre_map,random_painting())))
+    if painting and painting.get('colors') and painting.get('image_url'):
+        color_map = colors_to_genre(genre_map, painting)
+        playlist_data = playlist(color_map)
+        return render_template('index.html', playlist=playlist_data, painting=painting)
+
+    # If painting lacks required data, inform the user or provide fallback behavior
+    return render_template(
+        'index.html',
+        message="Painting data is incomplete. Could not generate a playlist.",
+        painting=painting,
+    )
+
+## fetches random painting from a request to harvard art museum API. Returns title, artist, image_url, and colors
+def random_painting():
+    harvard_url = f"https://api.harvardartmuseums.org/object?apikey={HARVARD_KEY}&classification=Paintings&hasimage=1&size=20&random=1"
+    response = requests.get(harvard_url)
+    #print(response.json())
+    if response.status_code == 200:
+        data = response.json()
+        if 'records' in data and data['records']:
+            # Filter records to find one with both `primaryimageurl` and `colors`
+            for painting in data['records']:
+                image_url = painting.get('primaryimageurl', '')
+                colors = painting.get('colors', [])
+                if image_url and colors:
+                    return {
+                        "title": painting.get('title', 'Unknown Title'),
+                        "image_url": image_url,
+                        "artist": (painting.get('people') or [{}])[0].get('name', 'Unknown Artist'),
+                        "colors": colors,
+                    }
+        # Return None if no valid painting is found
+    return None
+
+
+def colors_to_genre(artist_genre_map, painting):
+    colors = painting.get('colors', [])
+    color_to_genre_map = {
+        'Red': 'rock',
+        'Orange' : 'pop',
+        'Yellow': 'rap',
+        'Green': 'electronic',
+        'Blue': 'r&b',
+        'Violet': 'art pop',
+        'White': 'classical',
+        'Black': 'punk',
+        'Grey': 'hip hop',
+        'Brown': 'indie pop'
+    }
+
+    dominant_hues = [color['hue'] for color in colors]
+    # Map of hues to tracks
+    hue_to_tracks = {hue: [] for hue in dominant_hues}
+
+    # Assigning tracks to hues based on matching genres
+    for artist, data in artist_genre_map.items():
+        genres = data['genres']
+        tracks = data['tracks']
+
+
+        for track in tracks:
+            for hue in dominant_hues:
+                genre = color_to_genre_map.get(hue, '').lower()
+                if genre in genres:
+                    hue_to_tracks[hue].append(f"{track} by {artist}")
+    print(hue_to_tracks)
+    return hue_to_tracks
+
+##maps colors to genres and then returns tracks
+def playlist(hue_to_tracks):
+    play_list = []
+    added_tracks = set()  # Keeps track of unique tracks
+
+    # Add the first track from each hue if it hasn't been added yet
+    for hue, tracks in hue_to_tracks.items():
+        for track in tracks:
+            if track not in added_tracks:
+                play_list.append(track)
+                added_tracks.add(track)
+                if len(play_list) >= 7:
+                    return play_list
+
+    return play_list
+
+##spotify authorization and maps artists to genres
+def find_genres():
     auth_token = request.args['code']
     code_payload = {
         "grant_type": "authorization_code",
@@ -35,7 +128,7 @@ def callback():
     post_request = requests.post('https://accounts.spotify.com/api/token', data=code_payload)
     response_data = json.loads(post_request.text)
     access_token = response_data['access_token']
-    #print("Token Exchange Response:", json.dumps(response_data, indent=4))
+    # print("Token Exchange Response:", json.dumps(response_data, indent=4))
 
     if not access_token:
         print("Failed to obtain access token:", response_data)
@@ -44,7 +137,6 @@ def callback():
     authorization_header = {'Authorization': f'Bearer {access_token}'}
     top_tracks_api_endpoint = 'https://api.spotify.com/v1/me/top/tracks?limit=50'
 
-
     top_tracks_response = requests.get(top_tracks_api_endpoint, headers=authorization_header)
 
     if top_tracks_response.status_code != 200:
@@ -52,11 +144,11 @@ def callback():
 
     top_tracks = json.loads(top_tracks_response.text)
     top_tracks = top_tracks['items']
-    artists = []
+
     artist_genre_map = {}
 
     for track in top_tracks:
-        #artists.append(track['artists'][0]['name'])
+        # artists.append(track['artists'][0]['name'])
         artist = track['artists'][0]
         artist_name = artist['name']
         artist_id = artist['id']
@@ -72,81 +164,7 @@ def callback():
         else:
             print(f"Failed to fetch artist info for {artist_name}: {artist_response.text}")
 
-    print(colors_to_genre(artist_genre_map,random_painting()))
-    print(playlist(colors_to_genre(artist_genre_map,random_painting())))
-    return render_template('index.html', sorted_array=artist_genre_map, painting = random_painting())
-    ##fetch random painting
-    ##determine genre based on painting colors
+    #print(artist_genre_map)
+    return artist_genre_map
 
-    ##find the tracks that match the genre
-
-    ##create playlist in user's account with the tracks
-
-    ##render html template
-
-## fetches random painting from a request to harvard art museum API. Returns title, artist, image_url, and colors
-def random_painting():
-    harvard_url = f"https://api.harvardartmuseums.org/object?apikey={HARVARD_KEY}&classification=Paintings&hasimage=1&size=1&random=1"
-    response = requests.get(harvard_url)
-
-    if response.status_code == 200:
-        painting = response.json().get('records', [])[0]
-        return {
-                "title": painting.get('title', 'Unknown Title'),
-                "image_url": painting.get('primaryimageurl', ''),
-                "artist": painting.get('people', [{}])[0].get('name', 'Unknown Artist'),
-                "colors": painting.get('colors', [])
-        }
-    return None
-
-def colors_to_genre(artist_genre_map, painting):
-    colors = painting.get('colors', [])
-    color_to_genre_map = {
-        'Red': 'Rock',
-        'Orange' : 'Pop',
-        'Violet': 'Dance Pop',
-        'Blue': 'R&b',
-        'Yellow': 'Rap',
-        'White': 'Classical',
-        'Black': 'Punk',
-        'Green': 'Techno',
-        'Grey': 'Hip Hop'
-    }
-
-    # Extract dominant hues
-    dominant_hues = [color['hue'] for color in colors]
-
-    # Create a map of hues to genres
-    hue_to_tracks = {hue: [] for hue in dominant_hues}
-
-    # Assign tracks to hues based on matching genres
-    for artist, data in artist_genre_map.items():
-        genres = data['genres']
-        tracks = data['tracks']
-
-        for track in tracks:
-        # Assume each track contains genre information
-
-            for hue in dominant_hues:
-                genre = color_to_genre_map.get(hue, '').lower()
-                if genre and any(genre in g.lower() for g in genres):
-                    hue_to_tracks[hue].append(f"{track} by {artist}")
-
-    return hue_to_tracks
-
-def playlist(hue_to_tracks):
-    play_list = []
-    for hue, tracks in hue_to_tracks.items():
-        if tracks:
-            track = tracks[0]
-            play_list.append(track)
-
-    return play_list
-
-def find_genres(access_token):
-    pass
-##spotify header with access token
-##get user's top 50 tracks
-##filter tracks by genre
-## return 5 tracks to put in playlist
 
