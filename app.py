@@ -88,12 +88,15 @@ def colors_to_genre(artist_genre_map, painting):
     for artist, data in artist_genre_map.items():
         genres = data['genres']
         tracks = data['tracks']
-
-
+        print(tracks)
+        #for genre in genres:
+            #if genre in color_to_genre_map:
+                #for hue in dominant_hues:
+                    #hue_to_tracks[hue].append(f"{tracks[0]} by {artist}")
         for track in tracks:
             for hue in dominant_hues:
                 genre = color_to_genre_map.get(hue, '').lower()
-                if genre in genres:
+                if genre in genres and f"{track} by {artist}" not in hue_to_tracks[hue]:
                     hue_to_tracks[hue].append(f"{track} by {artist}")
     print(hue_to_tracks)
     return hue_to_tracks
@@ -164,7 +167,7 @@ def find_genres():
         else:
             print(f"Failed to fetch artist info for {artist_name}: {artist_response.text}")
 
-    #print(artist_genre_map)
+    print(artist_genre_map)
     return artist_genre_map
 
 
