@@ -1,5 +1,5 @@
 import json
-
+#import time
 
 from flask import Flask, request, redirect, render_template, session
 import requests
@@ -71,8 +71,6 @@ def generate_new_painting():
         return redirect('/')  # If no token, redirect to login page
 
     authorization_header = {'Authorization': f'Bearer {access_token}'}
-
-    # Fetch a random painting
     painting = random_painting()
 
     if not painting:
@@ -81,7 +79,7 @@ def generate_new_painting():
     # Get the artist genre map based on the user's Spotify top tracks
     genre_map = find_genres(authorization_header)
 
-    # If the painting has colors, map them to genres and create a playlist
+    # if painting has colors, map them to genres and create a playlist
     if painting.get('colors') and painting.get('image_url'):
         color_map = colors_to_genre(genre_map, painting)
         playlist_data = playlist(color_map)
@@ -115,7 +113,9 @@ def random_painting():
         # Return None if no valid painting is found
     return None
 
-
+##takes parameters of the artist, genre, track dictionary and the random painting
+##uses color data from painting to extract hues, and then associates those to an artist's genre
+##returns tracks from artist associated with genre, using user's top tracks
 def colors_to_genre(artist_genre_map, painting):
     colors = painting.get('colors', [])
     color_to_genre_map = {
@@ -153,7 +153,7 @@ def colors_to_genre(artist_genre_map, painting):
     #print(hue_to_tracks)
     return hue_to_tracks
 
-##maps colors to genres and then returns tracks
+##generates the user's playlist
 def playlist(hue_to_tracks):
     play_list = []
     added_tracks = set()  # Keeps track of unique tracks
@@ -169,11 +169,12 @@ def playlist(hue_to_tracks):
 
     return play_list
 
-##spotify authorization and maps artists to genres
+##spotify authorization and maps artists to genres.
+## parameter: the authorization header from the spotify authorization
+## mapping the artist, track, and genre because spotify doesn't have api data for the genres of tracks
 def find_genres(authorization_header):
 
     top_tracks_api_endpoint = 'https://api.spotify.com/v1/me/top/tracks?limit=50'
-
     top_tracks_response = requests.get(top_tracks_api_endpoint, headers=authorization_header)
 
     if top_tracks_response.status_code != 200:
@@ -185,7 +186,6 @@ def find_genres(authorization_header):
     artist_genre_map = {}
 
     for track in top_tracks:
-        # artists.append(track['artists'][0]['name'])
         artist = track['artists'][0]
         artist_name = artist['name']
         artist_id = artist['id']
@@ -201,6 +201,5 @@ def find_genres(authorization_header):
         else:
             print(f"Failed to fetch artist info for {artist_name}: {artist_response.text}")
 
-    #print(artist_genre_map)
     #print(artist_genre_map)
     return artist_genre_map
