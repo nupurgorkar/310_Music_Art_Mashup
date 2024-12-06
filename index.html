@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Art to Music Generator</title>
+        <style>
+        body {
+            justify-content: center;
+            text-align: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 50px 50px;
+            font-family: Roboto, monospace;
+            background-color: #f9f9f9;
+        }
+
+        h1, h2, p {
+            margin: 30px 0;
+        }
+
+        img {
+            max-width: 80%;
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+    <div>
+        <h1>Art to Music Generator</h1>
+    </div>
+<body>
+
+     {% if painting.image_url and painting.colors%}
+        <div>
+            <img src="{{ painting.image_url }}" alt="Painting">
+            <h1>{{ painting.title }} by {{ painting.artist }}</h1>
+            <p> with colors: {{ painting.colors }}</p>
+        </div>
+    {% else %}
+        <h2>Painting isn't available</h2>
+    {% endif %}
+    <h1>Your Playlist</h1>
+     <h3> based on this painting and your recent listening history, we've generated some music suggestions for you. </h3>
+    {% for item in playlist%}
+        <p> {{item}} </p>
+    {% endfor %}
+    <a href="/new" class="button">Generate New Painting</a>
+
+</body>
+</html>
