@@ -1,13 +1,15 @@
 import json
 
 
-from flask import Flask, request, redirect, render_template
+from flask import Flask, request, redirect, render_template, session
 import requests
 #from urllib.parse import quote
 from keys import HARVARD_KEY, Spotify_client_secret, Spotify_client_id
 
 ##creating instance of app object
 app = Flask(__name__)
+app.secret_key = 'xupur'
+
 
 @app.route('/')
 def index():
@@ -24,8 +26,26 @@ def index():
 @app.route('/callback')
 def callback():
     ##create playlist in user's account with the tracks
+    auth_token = request.args['code']
+    code_payload = {
+        "grant_type": "authorization_code",
+        "code": str(auth_token),
+        "redirect_uri": 'http://127.0.0.1:5000/callback',
+        "client_id": Spotify_client_id,
+        "client_secret": Spotify_client_secret
+    }
 
-    genre_map = find_genres()
+    post_request = requests.post('https://accounts.spotify.com/api/token', data=code_payload)
+    response_data = json.loads(post_request.text)
+    access_token = response_data['access_token']
+    # print("Token Exchange Response:", json.dumps(response_data, indent=4))
+
+    if not access_token:
+        print("Failed to obtain access token:", response_data)
+        return "Failed to authorize with Spotify."
+
+    authorization_header = {'Authorization': f'Bearer {access_token}'}
+    genre_map = find_genres(authorization_header)
     painting = random_painting()
     #print(painting.)
 
@@ -43,7 +63,36 @@ def callback():
         painting=painting,
     )
 
+@app.route('/new')
+def generate_new_painting():
+    # Ensure the user is authenticated with Spotify by checking the session for access token
+    access_token = session.get('access_token')
+    if not access_token:
+        return redirect('/')  # If no token, redirect to login page
 
+    authorization_header = {'Authorization': f'Bearer {access_token}'}
+
+    # Fetch a random painting
+    painting = random_painting()
+
+    if not painting:
+        return render_template('index.html', message="Failed to fetch a new painting.")
+
+    # Get the artist genre map based on the user's Spotify top tracks
+    genre_map = find_genres(authorization_header)
+
+    # If the painting has colors, map them to genres and create a playlist
+    if painting.get('colors') and painting.get('image_url'):
+        color_map = colors_to_genre(genre_map, painting)
+        playlist_data = playlist(color_map)
+        return render_template('index.html', playlist=playlist_data, painting=painting)
+
+    # If painting lacks required data, inform the user
+    return render_template(
+        'index.html',
+        message="Painting data is incomplete. Could not generate a playlist.",
+        painting=painting,
+    )
 ## fetches random painting from a request to harvard art museum API. Returns title, artist, image_url, and colors
 def random_painting():
     harvard_url = f"https://api.harvardartmuseums.org/object?apikey={HARVARD_KEY}&classification=Paintings&hasimage=1&size=20&random=20"
@@ -121,26 +170,8 @@ def playlist(hue_to_tracks):
     return play_list
 
 ##spotify authorization and maps artists to genres
-def find_genres():
-    auth_token = request.args['code']
-    code_payload = {
-        "grant_type": "authorization_code",
-        "code": str(auth_token),
-        "redirect_uri": 'http://127.0.0.1:5000/callback',
-        "client_id": Spotify_client_id,
-        "client_secret": Spotify_client_secret
-    }
+def find_genres(authorization_header):
 
-    post_request = requests.post('https://accounts.spotify.com/api/token', data=code_payload)
-    response_data = json.loads(post_request.text)
-    access_token = response_data['access_token']
-    # print("Token Exchange Response:", json.dumps(response_data, indent=4))
-
-    if not access_token:
-        print("Failed to obtain access token:", response_data)
-        return "Failed to authorize with Spotify."
-
-    authorization_header = {'Authorization': f'Bearer {access_token}'}
     top_tracks_api_endpoint = 'https://api.spotify.com/v1/me/top/tracks?limit=50'
 
     top_tracks_response = requests.get(top_tracks_api_endpoint, headers=authorization_header)
