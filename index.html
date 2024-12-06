@@ -9,13 +9,30 @@
             text-align: center;
             min-height: 100vh;
             margin: 0;
-            padding: 50px 50px;
+            padding: 50px 100px;
             font-family: Roboto, monospace;
             background-color: #f9f9f9;
         }
 
         h1, h2, p {
             margin: 30px 0;
+        }
+        .playlist-item {
+            color: blue;
+            font-weight: bold;
+        }
+
+        /* Style for the button */
+        .button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: blue;
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
         }
 
         img {
@@ -36,17 +53,17 @@
         <div>
             <img src="{{ painting.image_url }}" alt="Painting">
             <h1>{{ painting.title }} by {{ painting.artist }}</h1>
-            <p> with colors: {{ painting.colors }}</p>
+            <p> Fetching color data... {{ painting.colors }}</p>
         </div>
     {% else %}
         <h2>Painting isn't available</h2>
     {% endif %}
     <h1>Your Playlist</h1>
-     <h3> based on this painting and your recent listening history, we've generated some music suggestions for you. </h3>
+     <h3> We have analyzed this painting and your recent listening history. Based on this, we've generated some music suggestions for you. </h3>
     {% for item in playlist%}
         <p> {{item}} </p>
     {% endfor %}
-    <a href="/new" class="button">Generate New Painting</a>
+    <a href="/new" class="button">Generate New Painting and Playlist</a>
 
 </body>
 </html>
