@@ -63,6 +63,7 @@ def callback():
         painting=painting,
     )
 
+##allows user to click on button to generate a new painting and playlist
 @app.route('/new')
 def generate_new_painting():
     # Ensure the user is authenticated with Spotify by checking the session for access token
@@ -139,11 +140,9 @@ def colors_to_genre(artist_genre_map, painting):
     for artist, data in artist_genre_map.items():
         genres = data['genres']
         tracks = data['tracks']
-        #print(tracks)
-        #for genre in genres:
-            #if genre in color_to_genre_map:
-                #for hue in dominant_hues:
-                    #hue_to_tracks[hue].append(f"{tracks[0]} by {artist}")
+
+        ##checks to see if the genre related to hues is in the artist's genres
+        ##then checks to see if the tracks are already in the playlist
         for track in tracks:
             for hue in dominant_hues:
                 genre = color_to_genre_map.get(hue, '').lower()
@@ -191,6 +190,7 @@ def find_genres(authorization_header):
         artist_id = artist['id']
 
         # Get artist details (including genres)
+        ## in the future, would not use this method of collecting artist data because it makes multiple API calls
         artist_api_url = f'https://api.spotify.com/v1/artists/{artist_id}'
         artist_response = requests.get(artist_api_url, headers=authorization_header)
 
