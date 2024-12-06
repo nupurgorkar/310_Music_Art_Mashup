@@ -35,12 +35,29 @@ def callback():
         playlist_data = playlist(color_map)
         return render_template('index.html', playlist=playlist_data, painting=painting)
 
-    # If painting lacks required data, inform the user or provide fallback behavior
+
     return render_template(
         'index.html',
         message="Painting data is incomplete. Could not generate a playlist.",
         painting=painting,
     )
+@app.route('/playlist')
+def playlist(hue_to_tracks):
+    play_list = []
+    added_tracks = set()  # Keeps track of unique tracks
+
+    # Add the first track from each hue if it hasn't been added yet
+    for hue, tracks in hue_to_tracks.items():
+        for track in tracks:
+            if track not in added_tracks:
+                play_list.append(track)
+                added_tracks.add(track)
+                if len(play_list) >= 7:
+                    return play_list
+
+    return render_template('playlist.html', playlist=play_list)
+
+
 
 ## fetches random painting from a request to harvard art museum API. Returns title, artist, image_url, and colors
 def random_painting():
@@ -88,7 +105,7 @@ def colors_to_genre(artist_genre_map, painting):
     for artist, data in artist_genre_map.items():
         genres = data['genres']
         tracks = data['tracks']
-        print(tracks)
+        #print(tracks)
         #for genre in genres:
             #if genre in color_to_genre_map:
                 #for hue in dominant_hues:
@@ -98,24 +115,11 @@ def colors_to_genre(artist_genre_map, painting):
                 genre = color_to_genre_map.get(hue, '').lower()
                 if genre in genres and f"{track} by {artist}" not in hue_to_tracks[hue]:
                     hue_to_tracks[hue].append(f"{track} by {artist}")
-    print(hue_to_tracks)
+    #print(hue_to_tracks)
     return hue_to_tracks
 
 ##maps colors to genres and then returns tracks
-def playlist(hue_to_tracks):
-    play_list = []
-    added_tracks = set()  # Keeps track of unique tracks
 
-    # Add the first track from each hue if it hasn't been added yet
-    for hue, tracks in hue_to_tracks.items():
-        for track in tracks:
-            if track not in added_tracks:
-                play_list.append(track)
-                added_tracks.add(track)
-                if len(play_list) >= 7:
-                    return play_list
-
-    return play_list
 
 ##spotify authorization and maps artists to genres
 def find_genres():
@@ -167,7 +171,10 @@ def find_genres():
         else:
             print(f"Failed to fetch artist info for {artist_name}: {artist_response.text}")
 
-    print(artist_genre_map)
+    #print(artist_genre_map)
     return artist_genre_map
 
+#def add_playlist(playlist):
 
+##page 1: show just art with button to make playlist
+##page 2: shows playlist with add playlist to library button
